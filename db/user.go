@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	mydb "gocloud/db/mysql"
+	mydb "net_disk/db/mysql"
 )
 
 // UserSignup 通过用户名及密码完成user表的注册操作
@@ -19,6 +19,7 @@ func UserSignup(username string, passwd string) bool {
 		return false
 	}
 	if rowsAffected, err := ret.RowsAffected(); nil == err && rowsAffected > 0 {
+		fmt.Println(err)
 		return true
 	}
 	return false

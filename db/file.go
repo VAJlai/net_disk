@@ -3,7 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	mydb "gocloud/db/mysql"
+	mydb "net_disk/db/mysql"
 )
 
 // OnFileUploadFinished 文件上传完成

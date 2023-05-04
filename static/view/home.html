@@ -96,11 +96,12 @@
     $.ajax({
       url: "/file/query?" + queryParams(),
       type: "POST",
+      dataType:"json",
       data: {
         limit: 15
       },
       error: function (err) {
-        alert(JSON.stringify(err));
+        alert("查询信息错误"+JSON.stringify(err));
       },
       success: function (body) {
         if (!body) {
@@ -111,7 +112,7 @@
           return;
         }
 
-        var dlHost = 'http://localhost:8080';
+        var dlHost = 'http://localhost:18080';
         var dlEntry = localStorage.getItem('downloadEntry');
         if (dlEntry != '') {
           if (dlEntry.indexOf('http:')<0) {
@@ -120,7 +121,7 @@
             dlHost = dlEntry;
           }
         }
-        
+
         var downloadHtml = '<button class="btn btn-info" ' +
           'style="height:30px;margin:5px 3px;"' +
           'onClick = "downloadFile(\'' + dlHost + '/file/downloadurl?filehash={0}&{1}\')">下载</button>';

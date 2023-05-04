@@ -58,13 +58,14 @@
   function onUpload() {
     var upUrl = "/file/upload?" + queryParams();
     var upEntry = localStorage.getItem("uploadEntry");
-    if (upEntry != "" ) {
-      if (upEntry.indexOf("http:")>=0) {
-        upUrl = upEntry + "/file/upload?" + queryParams();
-      } else {
-        upUrl = "http://" + upEntry + "/file/upload?" + queryParams();
-      }
-    }
+    // if (upEntry != "" ) {
+    //   if (upEntry.indexOf("http:")>=0) {
+    //     upUrl = upEntry + "/file/upload?" + queryParams();
+    //   } else {
+    //     upUrl = "http://" + upEntry + "/file/upload?" + queryParams();
+    //   }
+    // }
+    upUrl = "http://localhost:18080/file/upload?" + queryParams();
     $.ajax({
       url: upUrl,
       type: 'POST',
@@ -77,9 +78,10 @@
       },
       success: function (res) {
         alert('请求返回结果: ' + JSON.stringify(res));
-        if (res.code == 0) {
-          window.location.href = "/static/view/home.html";
-        }
+        // if (res.code == 0) {
+        //   window.location.href = "/static/view/home.html";
+        // }
+        window.location.href = "http://localhost:18080/static/view/home.html";
       }
     });
   }

@@ -2,9 +2,9 @@ package handler
 
 import (
 	"fmt"
-	dblayer "gocloud/db"
-	"gocloud/util"
 	"net/http"
+	dblayer "net_disk/db"
+	"net_disk/util"
 	"os"
 	"time"
 )
@@ -42,13 +42,14 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 
 func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		//	data, err := os.ReadFile("./static/view/signin.html")
-		//	if err != nil {
-		//		w.WriteHeader(http.StatusInternalServerError)
-		//		return
-		//	}
-		//	w.Write(data)
-		http.Redirect(w, r, "/static/view/signin.html", http.StatusFound)
+		data, err := os.ReadFile("./static/view/signin.html")
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(data)
+		//http.Redirect(w, r, "/static/view/signin.html", http.StatusFound)
 		return
 	}
 	r.ParseForm()
@@ -71,7 +72,6 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	//3.登陆成功后重定向到首页
 
 	//w.Write([]byte("http://" + r.Host + "/static/view/home.html"))
-	//http.Redirect(w, r, "/static/view/home.html", http.StatusFound)
 	resp := util.RespMsg{
 		Code: 0,
 		Msg:  "ok",
@@ -92,14 +92,14 @@ func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	//1.解析请求参数
 	r.ParseForm()
 	username := r.Form.Get("username")
-	token := r.Form.Get("token")
+	//token := r.Form.Get("token")
 
 	//2.验证token是否有效
-	isValidToken := IsTokenValid(token)
-	if !isValidToken {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
+	//isValidToken := IsTokenValid(token)
+	//if !isValidToken {
+	//	w.WriteHeader(http.StatusForbidden)
+	//	return
+	//}
 
 	//3.查询用户信息
 	user, err := dblayer.GetUserInfo(username)
@@ -125,6 +125,9 @@ func GenToken(username string) string {
 
 // 验证token是否有效
 func IsTokenValid(token string) bool {
+	if len(token) != 40 {
+		return false
+	}
 	//TODO:判断token时效性，是否过期
 	//TODO:从数据库表tbl_user_token查询username对应的token信息
 	//TODO：对比两个token是否一致

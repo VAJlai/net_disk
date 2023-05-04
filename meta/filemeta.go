@@ -1,7 +1,7 @@
 package meta
 
 import (
-	mydb "gocloud/db"
+	mydb "net_disk/db"
 )
 
 // FileMeta:文件元信息结构
@@ -36,10 +36,10 @@ func GetFileMeta(fileSha1 string) FileMeta {
 }
 
 // 获取文件元信息
-func GetFileMetaDB(fileSha1 string) (FileMeta, error) {
+func GetFileMetaDB(fileSha1 string) (*FileMeta, error) {
 	tfile, err := mydb.GetFileMeta(fileSha1)
 	if err != nil {
-		return FileMeta{}, nil
+		return nil, err
 	}
 	fmeta := FileMeta{
 		FileSha1: tfile.FileHash,
@@ -47,7 +47,7 @@ func GetFileMetaDB(fileSha1 string) (FileMeta, error) {
 		FileSize: tfile.FileSize.Int64,
 		Location: tfile.FileAddr.String,
 	}
-	return fmeta, nil
+	return &fmeta, nil
 }
 
 // 获取批量的文件元信息列表

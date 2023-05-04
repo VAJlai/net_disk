@@ -75,20 +75,23 @@
         "username": username.value,
         "password": password.value
       },
+      dataType:"json",
       error: function (err) {
-        alert(err);
+        alert("错误"+err);
       },
+
       success: function (body) {
         localStorage.setItem("token", body.data.Token)
         localStorage.setItem("username", body.data.Username)
-        // 增加上传入口ip:port
+        //增加上传入口ip:port
         localStorage.setItem("uploadEntry", body.data.UploadEntry);
         // 增加下载入口ip:port
         localStorage.setItem("downloadEntry", body.data.DownloadEntry);
+        //alert("地址是"+body.data.Location)
          window.location.href = body.data.Location;
         //window.location.href = "http://localhost:18080/static/view/home.html";
-         //location.reload()
-        alert("2023.4.28")
+
+        //alert("2023.4.28")
       }
     });
   }

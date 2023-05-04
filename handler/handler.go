@@ -3,18 +3,21 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"gocloud/meta"
 	"io"
 	"net/http"
+	dblayer "net_disk/db"
+	"net_disk/meta"
+	"net_disk/util"
 	"os"
 	"strconv"
 	"time"
 )
 
+// UploadHandler 上传文件
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		//返回上传html页面
-		data, err := os.ReadFile("./static/index.html")
+		data, err := os.ReadFile("./static/view/upload.html")
 		if err != nil {
 			io.WriteString(w, "internel server error")
 		}
@@ -48,23 +51,30 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		newFile.Seek(0, 0)
-		//hash不方便测试，暂时用名字替代
-		fileMeta.FileSha1 = fileMeta.FileName + "1"
-		//fileMeta.FileSha1 = util.FileSha1(newFile)
-		//meta.UpdateFileMeta(fileMeta)
-		meta.UpdateFileMetaDB(fileMeta)
-
-		http.Redirect(w, r, "/file/upload/suc", http.StatusFound)
+		//hash不方便测试，暂时用名字+1替代
+		//fileMeta.FileSha1 = fileMeta.FileName + "1"
+		fileMeta.FileSha1 = util.FileSha1(newFile)
+		_ = meta.UpdateFileMetaDB(fileMeta)
+		//更新用户文件表记录
+		r.ParseForm()
+		username := r.Form.Get("username")
+		suc := dblayer.OnUserFileUploadFinished(username, fileMeta.FileSha1, fileMeta.FileName, fileMeta.FileSize)
+		if suc {
+			http.Redirect(w, r, "/static/view/home.html", http.StatusFound)
+		} else {
+			w.Write([]byte("Upload Failed."))
+		}
 	}
 }
 
-// 上传已完成
+// UploadSucHandler 上传已完成
+
 func UploadSucHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "喜来提示：文件已成功上传！Upload finished!")
 
 }
 
-// 获取文件信息
+// GetFileMetaHandler 获取文件信息
 func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
@@ -83,17 +93,18 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// 获取所有文件信息
+// FileQueryHandler 查询批量的文件元信息
 func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	countStr := r.Form["count"][0]
-	count, err := strconv.Atoi(countStr)
+	limitCnt, _ := strconv.Atoi(r.Form.Get("limit"))
+	username := r.Form.Get("username")
+	userFiles, err := dblayer.QueryUserFileMetas(username, limitCnt)
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	fMetaArray := meta.GetLastFileMetas(count)
-	data, err := json.Marshal(fMetaArray)
+	data, err := json.Marshal(userFiles)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -101,7 +112,7 @@ func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// 文件下载
+// DownloadHandler 文件下载
 func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fsha1 := r.Form.Get("filehash")
@@ -123,7 +134,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-// 更新元信息接口(重命名)
+// FileMetaUpdateHandler 更新元信息接口(重命名)
 func FileMetaUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
@@ -153,6 +164,7 @@ func FileMetaUpdateHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// FileDeleteHandler 删除文件
 func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fileSha1 := r.Form.Get("filehash")
@@ -164,4 +176,45 @@ func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	meta.RemoveFileMeta(fileSha1)
 	w.WriteHeader(http.StatusOK)
+}
+
+// TryFastUploadHandler 秒传借口
+func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	//1.解析请求参数
+	username := r.Form.Get("username")
+	fileHash := r.Form.Get("filehash")
+	filename := r.Form.Get("filename")
+	filesize, err := strconv.Atoi(r.Form.Get("filesize"))
+	//2.从文件表中查询相同hash的文件记录
+	fileMeta, err := meta.GetFileMetaDB(fileHash)
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	//3.查不到记录则返回秒传失败
+	if fileMeta == nil {
+		resp := util.RespMsg{
+			Code: -1,
+			Msg:  "秒传失败，请访问普通上传接口",
+		}
+		w.Write(resp.JSONBytes())
+		return
+	}
+	//4.上传过则将文件信息写入用户文件表，返回成功
+	suc := dblayer.OnUserFileUploadFinished(username, fileHash, filename, int64(filesize))
+	if suc {
+		resp := util.RespMsg{
+			Code: 0,
+			Msg:  "秒传成功",
+		}
+		w.Write(resp.JSONBytes())
+	} else {
+		resp := util.RespMsg{
+			Code: -2,
+			Msg:  "秒传失败,请稍后重试",
+		}
+		w.Write(resp.JSONBytes())
+		return
+	}
 }
