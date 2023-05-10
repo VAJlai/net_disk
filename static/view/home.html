@@ -113,18 +113,18 @@
         }
 
         var dlHost = 'http://localhost:18080';
-        var dlEntry = localStorage.getItem('downloadEntry');
-        if (dlEntry != '') {
-          if (dlEntry.indexOf('http:')<0) {
-            dlHost = 'http://' + dlEntry;
-          } else {
-            dlHost = dlEntry;
-          }
-        }
-
+        // var dlEntry = localStorage.getItem('downloadEntry');
+        // if (dlEntry != '') {
+        //   if (dlEntry.indexOf('http:')<0) {
+        //     dlHost = 'http://' + dlEntry;
+        //   } else {
+        //     dlHost = dlEntry;
+        //   }
+        // }
+        var dlHost = 'http://localhost:18080';
         var downloadHtml = '<button class="btn btn-info" ' +
           'style="height:30px;margin:5px 3px;"' +
-          'onClick = "downloadFile(\'' + dlHost + '/file/downloadurl?filehash={0}&{1}\')">下载</button>';
+          'onClick = "downloadFile(\'' +dlHost+ '/file/downloadurl?filehash={0}&{1}\')">下载</button>';
         var renameFileHtml = '<button class="btn btn-warning" ' +
           'style="height:30px;margin:5px 3px;"' +
           'onClick = "renameFile(\'{0}\',\'{1}\',\'http://apigw.fileserver.com/file/' +

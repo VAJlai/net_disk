@@ -23,7 +23,8 @@ func OnUserFileUploadFinished(username, filehash, filename string, filesize int6
 		fmt.Println("用户文件表错误:", err)
 		return false
 	}
-	_, err = stmt.Exec(username, filehash, filename, filesize, time.Now())
+	ti := time.Now().Format("2006-01-02 15:04:05")
+	_, err = stmt.Exec(username, filehash, filename, filesize, ti)
 	if err != nil {
 		return false
 	}

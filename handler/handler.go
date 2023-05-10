@@ -7,6 +7,7 @@ import (
 	"net/http"
 	dblayer "net_disk/db"
 	"net_disk/meta"
+	"net_disk/store/oss"
 	"net_disk/util"
 	"os"
 	"strconv"
@@ -51,9 +52,24 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		newFile.Seek(0, 0)
-		//hash不方便测试，暂时用名字+1替代
-		//fileMeta.FileSha1 = fileMeta.FileName + "1"
 		fileMeta.FileSha1 = util.FileSha1(newFile)
+		//同时将文件写入ceph存储
+		newFile.Seek(0, 0)
+		//ceph存储
+		//data, _ := io.ReadAll(newFile)
+		//bucket := ceph.GetCephBucket("userfile")
+		//cephPath := "/ceph/" + fileMeta.FileSha1
+		//_ = bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
+		//fileMeta.Location = cephPath
+		//OSS存储
+		ossPath := "oss/" + fileMeta.FileSha1
+		err = oss.Bucket().PutObject(ossPath, newFile)
+		if err != nil {
+			fmt.Println(err.Error())
+			w.Write([]byte("Upload Failed"))
+			return
+		}
+		fileMeta.Location = ossPath
 		_ = meta.UpdateFileMetaDB(fileMeta)
 		//更新用户文件表记录
 		r.ParseForm()
@@ -217,4 +233,16 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(resp.JSONBytes())
 		return
 	}
+}
+
+// DownloadURLHandler 生成文件的下载地址
+func DownloadURLHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	filehash := r.Form.Get("filehash")
+	//从文件表查找记录
+	row, _ := dblayer.GetFileMeta(filehash)
+
+	//TODO:判断文件存在oss还是Ceph
+	signedURL := oss.DownloadURL(row.FileAddr.String)
+	w.Write([]byte(signedURL))
 }
